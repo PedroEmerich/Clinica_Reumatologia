@@ -207,7 +207,7 @@ main, .footer { position: relative; z-index: 1; }
 
 .section {
   position: relative;
-  padding-block: clamp(6rem, 3rem + 9vw, 12rem);
+  padding-block: clamp(4rem, 2rem + 4.5vw, 7rem);
 }
 
 /* ---------- Tipografia ---------- */
@@ -1132,7 +1132,7 @@ html.no-js .marquee__track { animation: marquee 60s linear infinite; }
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(2rem, 3vw, 3rem);
-  margin-top: clamp(4.5rem, 9vw, 8.5rem);
+  margin-top: clamp(3rem, 6vw, 5.5rem);
 }
 .pillar {
   position: relative;
@@ -1175,7 +1175,7 @@ html.no-js .pillar::after { transform: scaleX(.18); }
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: clamp(4.5rem, 8vw, 7.5rem);
+  margin-top: clamp(3rem, 5.5vw, 5rem);
   border-top: 1px solid var(--line);
 }
 .stat {
@@ -1224,7 +1224,7 @@ html.no-js .pillar::after { transform: scaleX(.18); }
 .odo__sym { display: inline-block; height: 1.05em; line-height: 1.05; color: var(--accent); }
 
 /* ---------- Cabeçalhos de seção ---------- */
-.section-head { margin-bottom: clamp(3rem, 6vw, 5.5rem); }
+.section-head { margin-bottom: clamp(2.5rem, 4.5vw, 4rem); }
 .section-head--split {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
@@ -1420,7 +1420,7 @@ html.no-js .pillar::after { transform: scaleX(.18); }
   pointer-events: none;
   background: radial-gradient(60% 50% at 80% 90%, color-mix(in srgb, var(--accent) 8%, transparent), transparent);
 }
-.journey__pin { padding-block: clamp(6rem, 3rem + 9vw, 12rem); }
+.journey__pin { padding-block: clamp(4rem, 2rem + 4.5vw, 7rem); }
 html.journey-pinned .journey__pin {
   position: sticky;
   top: 0;
@@ -1914,13 +1914,13 @@ html.js .map.is-in { clip-path: inset(0 0 0 0 round var(--radius)); }
 /* ---------- Rodapé ---------- */
 .footer {
   overflow: hidden;
-  padding-top: clamp(5rem, 10vw, 9rem);
+  padding-top: clamp(3.5rem, 6vw, 6rem);
 }
 .footer__top {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 3rem;
-  padding-bottom: clamp(3rem, 7vw, 6rem);
+  padding-bottom: clamp(2rem, 4vw, 4rem);
 }
 .footer__kicker,
 .footer__k {
@@ -1982,7 +1982,6 @@ html.js .map.is-in { clip-path: inset(0 0 0 0 round var(--radius)); }
 .wordmark .lt__i {
   position: absolute;
   top: 0; left: 50%;
-  font-style: italic;
   color: var(--accent);
   opacity: 0;
   transform: translateX(-50%);
