@@ -1,0 +1,12 @@
+{
+  "name": "creass-landing",
+  "private": true,
+  "description": "Landing page da Creass Reumatologia e Especialidades Médicas",
+  "scripts": {
+    "build": "esbuild src/spine.js --bundle --minify --format=iife --target=es2019 --legal-comments=none --outfile=assets/js/spine.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.186.1"
+  }
+}

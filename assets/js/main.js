@@ -185,7 +185,7 @@
     const meta = $('meta[name="theme-color"]');
     const hudIdx = $('[data-hud-idx]');
     const hudName = $('[data-hud-name]');
-    const colors = { dark: '#0A1315', light: '#F1EEE7' };
+    const colors = { light: '#F7F2EE', rose: '#F6E4E3', dark: '#2A2A2A', wine: '#7E0F17' };
     const active = new Set();
     let current = null;
 
@@ -195,7 +195,7 @@
       const theme = el.dataset.theme;
       if (body.dataset.theme !== theme) {
         body.dataset.theme = theme;
-        if (meta) meta.setAttribute('content', colors[theme] || colors.dark);
+        if (meta) meta.setAttribute('content', colors[theme] || colors.light);
       }
       if (hudIdx && el.dataset.hud) {
         hudIdx.textContent = el.dataset.hud;
@@ -385,225 +385,6 @@
         el.style.transform = '';
         if (inner) inner.style.transform = '';
       });
-    });
-  }
-
-  /* ---------- Hero: esfera de partículas interativa ---------- */
-  function initHero() {
-    const hero = $('.hero');
-    const stage = $('.hero__stage', hero);
-    const canvas = $('.hero__canvas', hero);
-    const inner = $('.hero__inner', hero);
-    const ctx = canvas?.getContext('2d');
-    if (!ctx) return;
-
-    const header = $('.header');
-    const TAU = Math.PI * 2;
-    const small = state.vw < 700 || (navigator.hardwareConcurrency || 8) <= 4;
-    const N = small ? 950 : 1700;
-    const RING = small ? 220 : 360;
-    const LEVELS = 10;
-    const FG = '236, 232, 223';
-    const ACCENT = '139, 217, 198';
-
-    // Esfera de Fibonacci (distribuição uniforme)
-    const P = new Float32Array(N * 3);
-    const seed = new Float32Array(N);
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < N; i++) {
-      const y = 1 - ((i + 0.5) / N) * 2;
-      const r = Math.sqrt(1 - y * y);
-      const t = golden * i;
-      P[i * 3] = Math.cos(t) * r;
-      P[i * 3 + 1] = y;
-      P[i * 3 + 2] = Math.sin(t) * r;
-      seed[i] = Math.random();
-    }
-
-    // Buffers por nível de opacidade (poucas chamadas de desenho por quadro)
-    const buckets = Array.from({ length: LEVELS }, () => new Float32Array((N + RING) * 3));
-    const counts = new Int32Array(LEVELS);
-    const glowBuf = new Float32Array(N * 3);
-
-    let W = 0, H = 0, cx = 0, cy = 0, R = 0, alpha = 1;
-    let rotX = -0.32, offY = 0, spin = 0, lens = 0;
-    let visible = true;
-
-    function resize() {
-      const rect = hero.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = rect.width;
-      H = rect.height;
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (W >= 900) {
-        cx = W * 0.715;
-        cy = H * 0.43;
-        R = Math.min(W * 0.2, H * 0.3);
-        alpha = 1;
-      } else {
-        // No celular a esfera fica no canto superior direito, acima do título
-        R = Math.min(W * 0.34, H * 0.17);
-        cx = W - R * 0.55;
-        cy = (header ? header.offsetHeight : 68) + R * 0.95;
-        alpha = 0.8;
-      }
-      stage.style.setProperty('--cx', `${cx}px`);
-      stage.style.setProperty('--cy', `${cy}px`);
-      stage.style.setProperty('--r', `${R}px`);
-      draw(performance.now() * 0.001, Math.min(1, state.y / (H * 0.85)));
-    }
-
-    const push = (b, x, y, s) => {
-      const j = counts[b]++ * 3;
-      const arr = buckets[b];
-      arr[j] = x; arr[j + 1] = y; arr[j + 2] = s;
-    };
-
-    function draw(time, p) {
-      ctx.clearRect(0, 0, W, H);
-      const fade = (1 - p * 0.92) * alpha;
-      if (fade <= 0.02) return;
-
-      counts.fill(0);
-      let glowCount = 0;
-
-      const radius = R * (1 + p * 0.5);
-      const ay = spin + offY;
-      const sinY = Math.sin(ay), cosY = Math.cos(ay);
-      const sinX = Math.sin(rotX), cosX = Math.cos(rotX);
-      const D = 2.7;
-      const breathe = reduce ? 0 : 0.055;
-      const LR = Math.max(90, R * 0.55);
-      const LR2 = LR * LR;
-      const mx = state.mx;
-      const my = state.my + state.y;
-
-      for (let i = 0; i < N; i++) {
-        let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
-        const n = Math.sin(x * 3.2 + time * 0.8) * Math.sin(y * 2.6 + time * 0.62) * Math.sin(z * 3.4 + time * 0.7);
-        const s = 1 + n * breathe + p * seed[i] * 1.7;
-        x *= s; y *= s; z *= s;
-
-        const x1 = x * cosY - z * sinY;
-        const z1 = x * sinY + z * cosY;
-        const y1 = y * cosX - z1 * sinX;
-        const z2 = y * sinX + z1 * cosX;
-
-        const k = D / (D + z2);
-        let px = cx + x1 * radius * k;
-        let py = cy + y1 * radius * k;
-        const depth = clamp((1 - z2) * 0.5);
-
-        let glow = 0;
-        if (lens > 0.01) {
-          const dx = px - mx, dy = py - my;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < LR2) {
-            const d = Math.sqrt(d2) + 0.001;
-            const f = 1 - d / LR;
-            glow = f * f * lens;
-            px += (dx / d) * glow * 30;
-            py += (dy / d) * glow * 30;
-          }
-        }
-
-        const size = (0.45 + depth * 1.15) * (1 + glow * 0.9);
-        if (glow > 0.1) {
-          const j = glowCount++ * 3;
-          glowBuf[j] = px; glowBuf[j + 1] = py; glowBuf[j + 2] = size;
-        } else {
-          const a = (0.05 + depth * depth * 0.88) * fade;
-          push(Math.min(LEVELS - 1, (a * LEVELS) | 0), px, py, size);
-        }
-      }
-
-      // Anel orbital
-      const ringR = 1.5 * (1 + p * 0.6);
-      const tX = 0.64, tZ = -0.42;
-      const sTX = Math.sin(tX), cTX = Math.cos(tX), sTZ = Math.sin(tZ), cTZ = Math.cos(tZ);
-      const flow = reduce ? 0 : time * 0.07;
-      const ringPoint = theta => {
-        const x = Math.cos(theta) * ringR;
-        const z = Math.sin(theta) * ringR;
-        const y1 = -z * sTX;
-        const z1 = z * cTX;
-        const x2 = x * cTZ - y1 * sTZ;
-        const y2 = x * sTZ + y1 * cTZ;
-        const y3 = y2 * cosX - z1 * sinX;
-        const z3 = y2 * sinX + z1 * cosX;
-        const k = D / (D + z3 / ringR);
-        return [cx + x2 * R * k, cy + y3 * R * k, clamp((1 - z3 / ringR) * 0.5)];
-      };
-      for (let j = 0; j < RING; j++) {
-        const theta = (j / RING) * TAU + flow;
-        const dash = 0.6 + 0.4 * Math.sin(j * 0.35);
-        const [px, py, depth] = ringPoint(theta);
-        const a = (0.16 + depth * 0.55) * dash * fade;
-        push(Math.min(LEVELS - 1, (a * LEVELS) | 0), px, py, 0.6 + depth * 0.55);
-      }
-
-      ctx.fillStyle = `rgb(${FG})`;
-      for (let b = 0; b < LEVELS; b++) {
-        const n = counts[b];
-        if (!n) continue;
-        const arr = buckets[b];
-        ctx.globalAlpha = (b + 0.5) / LEVELS;
-        ctx.beginPath();
-        for (let j = 0; j < n * 3; j += 3) {
-          ctx.moveTo(arr[j] + arr[j + 2], arr[j + 1]);
-          ctx.arc(arr[j], arr[j + 1], arr[j + 2], 0, TAU);
-        }
-        ctx.fill();
-      }
-
-      if (glowCount) {
-        ctx.fillStyle = `rgb(${ACCENT})`;
-        ctx.globalAlpha = 0.95 * fade;
-        ctx.beginPath();
-        for (let j = 0; j < glowCount * 3; j += 3) {
-          ctx.moveTo(glowBuf[j] + glowBuf[j + 2], glowBuf[j + 1]);
-          ctx.arc(glowBuf[j], glowBuf[j + 1], glowBuf[j + 2], 0, TAU);
-        }
-        ctx.fill();
-      }
-
-      // Satélite
-      const [sx, sy, sd] = ringPoint(reduce ? 0.6 : time * 0.32);
-      ctx.fillStyle = `rgb(${ACCENT})`;
-      ctx.globalAlpha = 0.12 * fade;
-      ctx.beginPath(); ctx.arc(sx, sy, 10 + sd * 4, 0, TAU); ctx.fill();
-      ctx.globalAlpha = 0.28 * fade;
-      ctx.beginPath(); ctx.arc(sx, sy, 5, 0, TAU); ctx.fill();
-      ctx.globalAlpha = fade;
-      ctx.beginPath(); ctx.arc(sx, sy, 2.4, 0, TAU); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-
-    onResize(resize);
-
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(hero);
-    }
-
-    if (reduce) return;
-
-    onTick((now, dt) => {
-      if (!visible) return;
-      const p = clamp(state.y / (H * 0.85));
-      const nx = state.mx / state.vw - 0.5;
-      const ny = state.my / state.vh - 0.5;
-      spin += dt * 0.00011 * (1 + Math.min(Math.abs(state.vy) * 0.06, 2));
-      offY = lerp(offY, nx * 0.8, 0.05);
-      rotX = lerp(rotX, -0.32 + ny * 0.45, 0.05);
-      const inHero = state.pointer && state.my + state.y < H;
-      lens = lerp(lens, inHero ? 1 : 0, 0.08);
-      draw(now * 0.001, p);
-
-      stage.style.transform = `translate3d(0, ${(p * H * 0.22).toFixed(1)}px, 0)`;
-      inner.style.transform = `translate3d(0, ${(p * H * 0.12).toFixed(1)}px, 0)`;
-      inner.style.opacity = (1 - p * 1.15).toFixed(3);
     });
   }
 
@@ -1064,18 +845,21 @@
     const hudBar = $('.hud__bar i');
     const wa = $('.wa-float');
     const footer = $('.footer');
-    let max = 1, waOn = false, hudOn = false, footerTop = Infinity;
+    const hero = $('.hero');
+    let max = 1, waOn = false, hudOn = false, footerTop = Infinity, heroEnd = 0;
 
     onResize(() => {
       max = Math.max(1, document.documentElement.scrollHeight - state.vh);
       if (footer) footerTop = footer.getBoundingClientRect().top + state.y;
+      // O hero fica fixo enquanto a coluna descomprime; HUD e botão flutuante entram depois dele
+      if (hero) heroEnd = hero.getBoundingClientRect().bottom + state.y - state.vh;
     });
     onTick(() => {
       const p = clamp(state.y / max);
       const scale = `scaleX(${p.toFixed(4)})`;
       if (progress) progress.style.transform = scale;
       if (hudBar) hudBar.style.transform = scale;
-      const past = state.y > state.vh * 0.7;
+      const past = state.y > heroEnd + state.vh * 0.3;
       // O botão flutuante some quando o rodapé (com seu próprio CTA) entra na tela
       const showWa = past && state.y + state.vh < footerTop + state.vh * 0.35;
       if (showWa !== waOn) {
@@ -1096,7 +880,6 @@
   safe('journey', initJourney);
   safe('theme', initTheme);
   safe('reveal', initReveal);
-  safe('hero', initHero);
   safe('marquee', initMarquee);
   safe('manifesto', initManifesto);
   safe('cursor', initCursor);
